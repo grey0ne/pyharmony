@@ -104,7 +104,7 @@ def start_activity(args):
     else:
         activity = [x for x in config['activity']
             if (activity_numeric and int(x['id']) == activity_id)
-                or x['label'].lower() == activity_label
+                or x['label'].lower() == activity_label.lower()
         ]
 
     if not activity:
