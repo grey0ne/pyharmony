@@ -66,6 +66,9 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
         activity = action_cmd.text.split("=")
         return int(activity[1])
 
+    def _timestamp(self):
+        return str(int(round(time.time() * 1000)))
+
     def start_activity(self, activity_id):
         """Starts an activity.
 
@@ -79,8 +82,8 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
         iq_cmd['type'] = 'get'
         action_cmd = ET.Element('oa')
         action_cmd.attrib['xmlns'] = 'connect.logitech.com'
-        action_cmd.attrib['mime'] = ('harmony.engine?startactivity')
-        cmd = 'activityId=' + str(activity_id) + ':timestamp=0'
+        action_cmd.attrib['mime'] = ('harmony.activityengine?runactivity')
+        cmd = 'activityId=' + str(activity_id) + ':timestamp=' + self._timestamp() + ':async=1'
         action_cmd.text = cmd
         iq_cmd.set_payload(action_cmd)
         result = iq_cmd.send(block=True)
