@@ -74,9 +74,6 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
 
         Args:
             activity_id: An int or string identifying the activity to start
-
-        Returns:
-          A nested dictionary containing activities, devices, etc.
         """
         iq_cmd = self.Iq()
         iq_cmd['type'] = 'get'
@@ -86,11 +83,9 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
         cmd = 'activityId=' + str(activity_id) + ':timestamp=' + self._timestamp() + ':async=1'
         action_cmd.text = cmd
         iq_cmd.set_payload(action_cmd)
-        result = iq_cmd.send(block=True)
-        payload = result.get_payload()
-        assert len(payload) == 1
-        action_cmd = payload[0]
-        return action_cmd.text
+        iq_cmd.send(block=False)
+        time.sleep(2)
+        return True
 
     def sync(self):
         """Syncs the harmony hub with the web service.
