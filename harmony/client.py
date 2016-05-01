@@ -83,8 +83,7 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
         cmd = 'activityId=' + str(activity_id) + ':timestamp=' + self._timestamp() + ':async=1'
         action_cmd.text = cmd
         iq_cmd.set_payload(action_cmd)
-        iq_cmd.send(block=False)
-        time.sleep(2)
+        iq_cmd.send(block=True)
         return True
 
     def sync(self):
