@@ -1,2 +1,4 @@
+click
+click-log
 requests
 sleekxmpp
