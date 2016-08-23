@@ -1,42 +1,42 @@
-"""Client class for connecting to the Logitech Harmony."""
-
 import json
 import logging
-import time
 
-import sleekxmpp
-from sleekxmpp.xmlstream import ET
+from xml.etree import cElementTree as ET
 
+from .xmpp import BaseXMPPClient
 
 log = logging.getLogger(__name__)
 
 
-class HarmonyClient(sleekxmpp.ClientXMPP):
-    """An XMPP client for connecting to the Logitech Harmony."""
+class HarmonyClient(BaseXMPPClient):
+    """An XMPP client for connecting to the Logitech Harmony Hub."""
 
-    def __init__(self, auth_token):
-        user = '%s@connect.logitech.com/gatorade' % auth_token
-        password = auth_token
+    def __init__(self, hostname, port, session_token):
+        jid = '%s@connect.logitech.com/gatorade' % session_token
 
-        plugin_config = {
-            # Enables PLAIN authentication which is off by default.
-            'feature_mechanisms': {'unencrypted_plain': True},
-        }
-        super(HarmonyClient, self).__init__(user, password, plugin_config=plugin_config)
+        super(HarmonyClient, self).__init__(jid, session_token)
 
-    def get_config(self):
+        self.connect(address=(hostname, port), disable_starttls=True, use_ssl=False)
+        self.result = None
+
+    async def get_config(self):
         """Retrieves the Harmony device configuration.
 
         :returns: A nested dictionary containing activities, devices, etc.
         """
-        iq_cmd = self.Iq()
-        iq_cmd['type'] = 'get'
+
+        # Wait until the session has been started.
+        await self.session_bind_event.wait()
+
+        iq = self.Iq()
+        iq['type'] = 'get'
         action_cmd = ET.Element('oa')
         action_cmd.attrib['xmlns'] = 'connect.logitech.com'
         action_cmd.attrib['mime'] = 'vnd.logitech.harmony/vnd.logitech.harmony.engine?config'
-        iq_cmd.set_payload(action_cmd)
+        iq.set_payload(action_cmd)
 
-        result = iq_cmd.send(block=True)
+        # TODO: Catch IqError & IqTimeout
+        result = await iq.send()
         payload = result.get_payload()
 
         assert len(payload) == 1
@@ -47,20 +47,24 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
 
         return json.loads(device_list)
 
-    def get_current_activity(self):
+    async def get_current_activity(self):
         """Retrieves the current activity.
 
         :rtype: int
         :returns: A int with the activity ID.
         """
-        iq_cmd = self.Iq()
-        iq_cmd['type'] = 'get'
+
+        # Wait until the session has been started.
+        await self.session_bind_event.wait()
+
+        iq = self.Iq()
+        iq['type'] = 'get'
         action_cmd = ET.Element('oa')
         action_cmd.attrib['xmlns'] = 'connect.logitech.com'
         action_cmd.attrib['mime'] = 'vnd.logitech.harmony/vnd.logitech.harmony.engine?getCurrentActivity'
-        iq_cmd.set_payload(action_cmd)
-        result = iq_cmd.send(block=True)
+        iq.set_payload(action_cmd)
 
+        result = await iq.send()
         payload = result.get_payload()
 
         assert len(payload) == 1
@@ -71,30 +75,33 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
 
         return int(activity[1])
 
-    def start_activity(self, activity_id):
+    async def start_activity(self, activity_id):
         """Starts an activity.
 
         :param int activity_id: An int identifying the activity to start.
 
         :returns: A nested dictionary containing activities, devices, etc.
         """
-        iq_cmd = self.Iq()
-        iq_cmd['type'] = 'get'
+
+        # Wait until the session has been started.
+        await self.session_bind_event.wait()
+
+        iq = self.Iq()
+        iq['type'] = 'get'
         action_cmd = ET.Element('oa')
         action_cmd.attrib['xmlns'] = 'connect.logitech.com'
         action_cmd.attrib['mime'] = ('harmony.engine?startactivity')
-        cmd = 'activityId=' + str(activity_id) + ':timestamp=0'
-        action_cmd.text = cmd
-        iq_cmd.set_payload(action_cmd)
+        action_cmd.text = 'activityId=' + str(activity_id) + ':timestamp=0'
+        iq.set_payload(action_cmd)
 
-        result = iq_cmd.send(block=True)
-
+        result = await iq.send()
         payload = result.get_payload()
+
         assert len(payload) == 1
         action_cmd = payload[0]
         return action_cmd.text
 
-    def turn_off(self):
+    async def turn_off(self):
         """Turns the system off if it's on, otherwise it does nothing."""
 
         activity = self.get_current_activity()
@@ -102,24 +109,3 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
         if activity != -1:
             self.start_activity(-1)
         return True
-
-
-def create_and_connect_client(ip_address, port, session_token):
-    """Creates a Harmony client and initializes session.
-
-    Args:
-      ip_address: IP Address of the Harmony device.
-      port: Port that the Harmony device is listening on.
-      token: A string containing a session token.
-
-    Returns:
-      An instance of HarmonyClient that is connected.
-    """
-    client = HarmonyClient(session_token)
-    client.connect(address=(ip_address, port), use_tls=False, use_ssl=False)
-    client.process(block=False)
-
-    while not client.sessionstarted:
-        time.sleep(0.1)
-
-    return client

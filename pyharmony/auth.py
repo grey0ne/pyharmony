@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import re
@@ -5,7 +6,8 @@ import re
 from xml.etree import cElementTree as ET
 
 import requests
-import sleekxmpp
+
+from .xmpp import BaseXMPPClient
 
 log = logging.getLogger(__name__)
 
@@ -13,32 +15,22 @@ log = logging.getLogger(__name__)
 LOGITECH_AUTH_URL = 'https://svcs.myharmony.com/CompositeSecurityServices/Security.svc/json/GetUserAuthToken'
 
 
-class SwapAuthToken(sleekxmpp.ClientXMPP):
-    """An XMPP client for swapping a Login Token for a Session Token.
+class SessionTokenClient(BaseXMPPClient):
+    """An XMPP Client for getting a session token given a login token for a Harmony Hub device."""
 
-    After the client finishes processing, the uuid attribute of the class will
-    contain the session token.
-    """
+    def __init__(self, hostname, port, login_token):
+        jid = 'guest@connect.logitech.com/gatorade'
+        password = 'guest'
 
-    def __init__(self, token):
-        """Initializes the client.
+        super(SessionTokenClient, self).__init__(jid, password)
 
-        :param str token: The base64 string containing the 48-byte Login Token.
-        """
+        self.token = login_token
+        self.connect(address=(hostname, port), disable_starttls=True, use_ssl=False)
 
-        plugin_config = {
-            # Enables PLAIN authentication which is off by default.
-            'feature_mechanisms': {'unencrypted_plain': True},
-        }
-
-        super(SwapAuthToken, self).__init__('guest@connect.logitech.com/gatorade', 'guest', plugin_config=plugin_config)
-
-        self.token = token
-        self.uuid = None
-        self.add_event_handler('session_start', self.session_start)
-
-    def session_start(self, _):
+    async def session_start(self):
         """Called when the XMPP session has been initialized."""
+
+        await self.session_bind_event.wait()
 
         iq_cmd = self.Iq()
         iq_cmd['type'] = 'get'
@@ -50,22 +42,24 @@ class SwapAuthToken(sleekxmpp.ClientXMPP):
 
         iq_cmd.set_payload(action_cmd)
 
-        result = iq_cmd.send(block=True)
+        result = await iq_cmd.send()
         payload = result.get_payload()
 
         assert len(payload) == 1
-        oa_resp = payload[0]
+        oa_response = payload[0]
 
         assert oa_response.attrib['errorcode'] == '200'
 
         match = re.search(r'identity=(?P<uuid>[\w-]+):status', oa_response.text)
-        assert match
 
-        self.uuid = match.group('uuid')
+        if not match:
+          raise ValueError('Could not get a session token!')
 
-        log.debug('Received UUID from device: %s', self.uuid)
+        uuid = match.group('uuid')
 
-        self.disconnect(send_close=False)
+        log.debug('Received UUID from device: %s', uuid)
+
+        return uuid
 
 
 def get_login_token(username, password):
@@ -101,23 +95,6 @@ def get_login_token(username, password):
     return token
 
 
-def swap_auth_token(ip_address, port, login_token):
-    """Swaps the Logitech auth token for a session token.
-
-    :param str ip_address: IP Address of the Harmony device.
-    :param int port: Port that the Harmony device is listening on.
-    :param str token: A base64-encoded string containing a 48-byte Login Token.
-
-    :rtype: str
-    :returns: A string containing the session token.
-    """
-    login_client = SwapAuthToken(login_token)
-    login_client.connect(address=(ip_address, port), use_tls=False, use_ssl=False)
-    login_client.process(block=True)
-
-    return login_client.uuid
-
-
 def login(email, password, hostname, port=5222):
     """Performs a full login to Logitech, returning a session token from the local device.
 
@@ -128,14 +105,17 @@ def login(email, password, hostname, port=5222):
 
     :rtype: str
     """
-    token = get_login_token(email, password)
 
-    if not token:
+    # This is syncronous
+    login_token = get_login_token(email, password)
+
+    if not login_token:
         raise ValueError('Could not get a login token from the Logitech server.')
 
-    session_token = swap_auth_token(hostname, port, token)
+    client = SessionTokenClient(hostname, port, login_token)
 
-    if not session_token:
-        raise ValueError('Could not swap login token for a session token.')
+    tasks = asyncio.gather(*[client.session_start()])
+    client.loop.run_until_complete(tasks)
+    client.disconnect()
 
-    return session_token
+    return next(iter(tasks.result()), None)

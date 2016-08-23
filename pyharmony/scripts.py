@@ -1,14 +1,17 @@
 """Command line utility for querying Logitech Harmony devices."""
 
+import asyncio
+import json
 import logging
-import pprint
 import sys
 
 import click
 import click_log
 
 from .auth import login
-from .client import create_and_connect_client
+from .client import HarmonyClient
+
+log = logging.getLogger(__name__)
 
 
 @click.group()
@@ -34,8 +37,12 @@ def show_config(ctx):
     """Connects to the Harmony and prints its configuration."""
 
     token = login(**ctx.obj)
-    client = create_and_connect_client(ctx.obj['hostname'], ctx.obj['port'], token)
-    pprint.pprint(client.get_config())
+    client = HarmonyClient(ctx.obj['hostname'], ctx.obj['port'], token)
+
+    tasks = asyncio.gather(*[client.get_config()])
+    client.loop.run_until_complete(tasks)
     client.disconnect()
+
+    print(json.dumps(next(iter(tasks.result())), indent=2))
 
     sys.exit(0)

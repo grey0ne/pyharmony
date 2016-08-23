@@ -1,4 +1,4 @@
 click
 click-log
 requests
-sleekxmpp
+slixmpp
