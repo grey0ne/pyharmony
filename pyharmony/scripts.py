@@ -32,8 +32,9 @@ def cli(ctx, email, password, hostname, port):
 
 
 @cli.command()
+@click.option('--filename', type=click.Path(), default='-', help='Filename to write the config out to. Default is STDOUT')
 @click.pass_context
-def show_config(ctx):
+def show_config(ctx, filename):
     """Connects to the Harmony and prints its configuration."""
 
     token = login(**ctx.obj)
@@ -43,6 +44,9 @@ def show_config(ctx):
     client.loop.run_until_complete(tasks)
     client.disconnect()
 
-    print(json.dumps(next(iter(tasks.result())), indent=2))
+    config = json.dumps(next(iter(tasks.result())), indent=2)
+
+    with click.open_file(filename, 'w') as fh:
+      fh.write(config)
 
     sys.exit(0)
