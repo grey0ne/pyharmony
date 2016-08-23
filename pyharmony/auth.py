@@ -95,10 +95,10 @@ def get_login_token(username, password):
     return token
 
 
-def login(email, password, hostname, port=5222):
+def login(username, password, hostname, port=5222):
     """Performs a full login to Logitech, returning a session token from the local device.
 
-    :param str email: The username (email) to login to Logitech's web service.
+    :param str username: The username (email) to login to Logitech's web service.
     :param str password: The password for the account.
     :param str hostname: The hostname (or IP) of the local Harmony device.
     :param int port: The port of the Harmony device. Defaults to 5222.
@@ -107,7 +107,7 @@ def login(email, password, hostname, port=5222):
     """
 
     # This is syncronous
-    login_token = get_login_token(email, password)
+    login_token = get_login_token(username, password)
 
     if not login_token:
         raise ValueError('Could not get a login token from the Logitech server.')
