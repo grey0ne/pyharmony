@@ -1,7 +1,9 @@
-# Python compiled files.
+MANIFEST
+.coverage
+.direnv
+.idea/
+dist/
+*.egg-info/
+*.egg
 *.pyc
-
-# Eclipse project files.
-.project
-.pydevproject
-
+*.swp

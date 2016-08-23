@@ -1,3 +1,4 @@
-argparse
-requests==1.1.0
-sleekxmpp
+click
+click-log
+requests
+slixmpp
