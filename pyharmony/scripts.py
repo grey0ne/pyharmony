@@ -61,3 +61,20 @@ def show_config(ctx, filename):
       fh.write(config)
 
     sys.exit(0)
+
+@click.command()
+@click.option('--device', help='Device to send command to')
+@click.option('--command', help='Command to send to device')
+@click.pass_context
+ def send_command(ctx, device_id, command):
+    """Send a simple command to the Harmony Hub."""
+
+    token = login(**ctx.obj)
+    client = HarmonyClient(ctx.obj['hostname'], ctx.obj['port'], token)
+
+    tasks = asyncio.gather(*[client.send_command(device_id, command)])
+    client.loop.run_until_complete(tasks)
+    client.disconnect()
+
+    sys.exit(0)
+

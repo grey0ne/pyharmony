@@ -109,3 +109,31 @@ class HarmonyClient(BaseXMPPClient):
         if activity != -1:
             self.start_activity(-1)
         return True
+
+     async def send_command(self, device_id, command):
+        """Send a simple command to the Harmony Hub.
+
+        :param str device_id: A str identifying the device to send command to.
+        :param str command: A str identifying the command to be sent.
+
+        :rtype: bool
+        """
+
+        # Wait until the session has been started
+        await self.session_bind_event.wait()
+
+        iq_cmd = self.Iq()
+        iq_cmd['type'] = 'get'
+        iq_cmd['id'] = '5e518d07-bcc2-4634-ba3d-c20f338d8927-2'
+        action_cmd = ET.Element('oa')
+        action_cmd.attrib['xmlns'] = 'connect.logitech.com'
+        action_cmd.attrib['mime'] = 'vnd.logitech.harmony/vnd.logitech.harmony.engine?holdAction'
+        action_cmd.text = 'action={"type"::"IRCommand","deviceId"::"{}","command"::"{}"}:status=press'.format(device_id, command)
+        iq_cmd.set_payload(action_cmd)
+
+        result = await iq_cmd.send()
+        # FIXME: This is an ugly hack, we need to follow the actual
+        # protocol for sending a command, since block=True does not
+        # work.
+        time.sleep(0.5)
+        return True
