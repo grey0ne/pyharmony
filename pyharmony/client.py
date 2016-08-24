@@ -110,7 +110,7 @@ class HarmonyClient(BaseXMPPClient):
             self.start_activity(-1)
         return True
 
-     async def send_command(self, device_id, command):
+    async def send_command(self, device_id, command):
         """Send a simple command to the Harmony Hub.
 
         :param str device_id: A str identifying the device to send command to.

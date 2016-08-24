@@ -66,7 +66,7 @@ def show_config(ctx, filename):
 @click.option('--device', help='Device to send command to')
 @click.option('--command', help='Command to send to device')
 @click.pass_context
- def send_command(ctx, device_id, command):
+def send_command(ctx, device_id, command):
     """Send a simple command to the Harmony Hub."""
 
     token = login(**ctx.obj)
@@ -77,4 +77,3 @@ def show_config(ctx, filename):
     client.disconnect()
 
     sys.exit(0)
-
