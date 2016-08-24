@@ -128,7 +128,7 @@ class HarmonyClient(BaseXMPPClient):
         action_cmd = ET.Element('oa')
         action_cmd.attrib['xmlns'] = 'connect.logitech.com'
         action_cmd.attrib['mime'] = 'vnd.logitech.harmony/vnd.logitech.harmony.engine?holdAction'
-        action_cmd.text = 'action={"type"::"IRCommand","deviceId"::"{}","command"::"{}"}:status=press'.format(device_id, command)
+        action_cmd.text = 'action={"type"::"IRCommand","deviceId"::"'+str(device_id)+'","command"::"'+command+'"}:status=press'
         iq_cmd.set_payload(action_cmd)
 
         result = await iq_cmd.send()
