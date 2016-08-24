@@ -62,7 +62,7 @@ def show_config(ctx, filename):
 
     sys.exit(0)
 
-@click.command()
+@cli.command()
 @click.option('--device', help='Device to send command to')
 @click.option('--command', help='Command to send to device')
 @click.pass_context
