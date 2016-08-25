@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 from xml.etree import cElementTree as ET
 
@@ -110,7 +111,7 @@ class HarmonyClient(BaseXMPPClient):
             self.start_activity(-1)
         return True
 
-    def send_command(self, device_id, command):
+    async def send_command(self, device_id, command):
         """Send a simple command to the Harmony Hub.
 
         :param str device_id: A str identifying the device to send command to.
@@ -118,6 +119,9 @@ class HarmonyClient(BaseXMPPClient):
 
         :rtype: bool
         """
+
+        # Wait until the session has been started
+        await self.session_bind_event.wait()
 
         iq_cmd = self.Iq()
         iq_cmd['type'] = 'get'
@@ -128,7 +132,7 @@ class HarmonyClient(BaseXMPPClient):
         action_cmd.text = 'action={"type"::"IRCommand","deviceId"::"'+str(device_id)+'","command"::"'+command+'"}:status=press'
         iq_cmd.set_payload(action_cmd)
 
-        result = iq_cmd.send(block=False)
+        result = await iq_cmd.send()
         # FIXME: This is an ugly hack, we need to follow the actual
         # protocol for sending a command, since block=True does not
         # work.
