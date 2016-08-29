@@ -1,12 +1,12 @@
 pyharmony
 =========
 
-Python 2.7+ library for connecting to and controlling the Logitech Harmony Hub
+Python library for connecting to and controlling the Logitech Harmony Link
 
 Protocol
 --------
 
-As the Harmony protocol is being worked out, notes are in PROTOCOL.md.
+As the harmony protocol is being worked out, notes are in PROTOCOL.md.
 
 Status
 ------
@@ -55,6 +55,7 @@ For full argument information on the command-line tool:
 TODO
 ----
 
-* Figure out how to detect when the session token expires so we can get a new one.
+* Figure out how to detect when the session token expires so we can get a new
+  one.
 * Figure out a good way of sending commands based on sync state.
 * Is it possible to update device configuration?
