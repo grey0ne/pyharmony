@@ -1,6 +1,7 @@
 MANIFEST
 .coverage
 .direnv
+.venv
 .idea/
 dist/
 build/

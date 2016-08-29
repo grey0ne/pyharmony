@@ -14,7 +14,12 @@ LOGGER = logging.getLogger(__name__)
 class HarmonyClient(sleekxmpp.ClientXMPP):
     """An XMPP client for connecting to the Logitech Harmony."""
 
-    def __init__(self, auth_token):
+    def __init__(self, email, password, harmony_ip, harmony_port=None):
+        self.port = harmony_port or '5222'
+        self.token = login_to_logitech_site() or 'token'
+        self.email = email
+        self.password = password
+        self.ip_address = harmony_ip
         user = '%s@connect.logitech.com/gatorade.' % auth_token
         password = auth_token
         plugin_config = {
@@ -23,6 +28,26 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
         }
         super(HarmonyClient, self).__init__(
             user, password, plugin_config=plugin_config)
+        self.connect(address=(ip_address, port),
+                       use_tls=False, use_ssl=False)
+        self.process(block=False)
+
+        while not self.sessionstarted:
+            time.sleep(0.1)
+
+    def login_to_logitech_site(self):
+        token = auth.login(self.email, self.password)
+        if not token:
+            print('Could not get token from  Logitech server.')
+            return None
+
+        session_token = auth.swap_auth_token(
+            self.ip_address, self.port, token)
+        if not session_token:
+            print('Could not swap login token for session token.')
+            return None
+
+        return session_token
 
     def get_config(self):
         """Retrieves the Harmony device configuration.
@@ -130,24 +155,3 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
             print("OFF")
             self.start_activity(-1)
         return True
-
-def create_and_connect_client(ip_address, port, token):
-    """Creates a Harmony client and initializes session.
-
-    Args:
-      ip_address: IP Address of the Harmony device.
-      port: Port that the Harmony device is listening on.
-      token: A string containing a session token.
-
-    Returns:
-      An instance of HarmonyClient that is connected.
-    """
-    client = HarmonyClient(token)
-    client.connect(address=(ip_address, port),
-                   use_tls=False, use_ssl=False)
-    client.process(block=False)
-
-    while not client.sessionstarted:
-        time.sleep(0.1)
-
-    return client
