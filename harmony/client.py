@@ -20,7 +20,7 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
         self.email = email
         self.password = password
         self.ip_address = harmony_ip
-    self.token = self.login_to_logitech_site() or 'token'
+        self.token = self.login_to_logitech_site() or 'token'
 
         user = '%s@connect.logitech.com/gatorade.' % auth_token
         password = auth_token
