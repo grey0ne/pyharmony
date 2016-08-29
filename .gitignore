@@ -1,6 +1,7 @@
 MANIFEST
 .coverage
 .direnv
+.venv
 .idea/
 dist/
 build/
@@ -9,3 +10,4 @@ build/
 *.pyc
 *.swp
 *.cfg
+**.ini
