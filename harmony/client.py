@@ -30,7 +30,7 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
         }
         super(HarmonyClient, self).__init__(
             user, password, plugin_config=plugin_config)
-        self.connect(address=(ip_address, port),
+        self.connect(address=(self.ip_address, self.port),
                        use_tls=False, use_ssl=False)
         self.process(block=False)
 
