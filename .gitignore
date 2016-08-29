@@ -3,7 +3,9 @@ MANIFEST
 .direnv
 .idea/
 dist/
+build/
 *.egg-info/
 *.egg
 *.pyc
 *.swp
+*.cfg
