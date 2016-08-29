@@ -10,3 +10,4 @@ build/
 *.pyc
 *.swp
 *.cfg
+**.ini
