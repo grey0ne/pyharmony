@@ -6,6 +6,7 @@ import time
 
 import sleekxmpp
 from sleekxmpp.xmlstream import ET
+from . import auth
 
 
 LOGGER = logging.getLogger(__name__)
@@ -16,10 +17,11 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
 
     def __init__(self, email, password, harmony_ip, harmony_port=None):
         self.port = harmony_port or '5222'
-        self.token = login_to_logitech_site() or 'token'
         self.email = email
         self.password = password
         self.ip_address = harmony_ip
+	self.token = self.login_to_logitech_site() or 'token'
+
         user = '%s@connect.logitech.com/gatorade.' % auth_token
         password = auth_token
         plugin_config = {

@@ -2,8 +2,8 @@
 
 from distutils.core import setup
 
-setup(name='Pyharmony',
-      version='0.1',
+setup(name='pyharmony',
+      version='0.2',
       description='Python Interface for Logitech Harmony Hub',
       author='Wisdom Wolf',
       author_email='wisdomwolf@gmail.com',
