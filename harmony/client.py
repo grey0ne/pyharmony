@@ -114,8 +114,8 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
         return True
 
     def sync(self):
-        """Syncs the harmony hub with the web service.
-        """
+        """Syncs the harmony hub with the web service."""
+
         iq_cmd = self.Iq()
         iq_cmd['type'] = 'get'
         action_cmd = ET.Element('oa')
@@ -127,8 +127,8 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
         assert len(payload) == 1
 
     def send_command(self, device_id, command):
-        """Send a simple command to the Harmony Hub.
-        """
+        """Send a simple command to the Harmony Hub."""
+
         iq_cmd = self.Iq()
         iq_cmd['type'] = 'get'
         iq_cmd['id'] = '5e518d07-bcc2-4634-ba3d-c20f338d8927-2'
@@ -139,11 +139,14 @@ class HarmonyClient(sleekxmpp.ClientXMPP):
         action_cmd.text = 'action={"type"::"IRCommand","deviceId"::"'+str(device_id)+'","command"::"'+command+'"}:status=press'
         iq_cmd.set_payload(action_cmd)
         result = iq_cmd.send(block=False)
-        # FIXME: This is an ugly hack, we need to follow the actual
-        # protocol for sending a command, since block=True does not
-        # work.
-        time.sleep(0.5)
-        return True
+
+        action_cmd.attrib['mime'] = (
+            'vnd.logitech.harmony/vnd.logitech.harmony.engine?holdAction')
+        action_cmd.text = 'action={"type"::"IRCommand","deviceId"::"'+device_id+'","command"::"'+command+'"}:status=release'
+        iq_cmd.set_payload(action_cmd)
+        result = iq_cmd.send(block=False)
+
+        return result
 
     def turn_off(self):
         """Turns the system off if it's on, otherwise it does nothing.
