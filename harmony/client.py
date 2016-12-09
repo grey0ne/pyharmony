@@ -6,7 +6,7 @@ import time
 
 import sleekxmpp
 from sleekxmpp.xmlstream import ET
-from pyharmony import auth as harmony_auth
+from . import auth as harmony_auth
 
 
 LOGGER = logging.getLogger(__name__)
