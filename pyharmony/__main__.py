@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 """Command line utility for querying the Logitech Harmony."""
 
 import argparse
@@ -25,14 +23,12 @@ def harmony_command(func):
             return 1
 
         try:
-            func(client)
+            return func(client, args)
         except HarmonyException:
             print 'Error in command execution'
             return 1
         finally:
             client.disconnect(send_close=True)
-
-        return 0
 
     return decorated
 
@@ -43,114 +39,88 @@ def pprint(obj):
 
 
 def get_client(args):
-    """Connect to the Harmony and return a Client instance."""
     return HarmonyClient(args.hostname, args.port)
 
 
 @harmony_command
-def show_config(client):
-    """Connects to the Harmony and prints its configuration."""
+def show_config(client, args):
     pprint(client.get_config())
 
 
 @harmony_command
-def show_current_activity(client):
-    """
-    Connects to the Harmony and prints the current activity block from the config.
-    """
-    config = client.get_config()
-    current_activity_id = client.get_current_activity()
+def show_current_activity(client, args):
+    current_activity_id = int(client.get_current_activity())
 
-    current_activity = None
-    for activity in config['activity']:
-        if int(activity['id']) == current_activity_id:
-            current_activity = activity
+    current_activity = client.get_activity(current_activity_id)
 
-    print 'CURRENT: ', current_activity['id'], current_activity['label']
+    print 'Current activity: ', current_activity['id'], current_activity['label']
 
 
 @harmony_command
-def list_activities(client):
+def list_activities(client, args):
     for activity in client.get_activities():
-        print activity['id'], activity['label']
+        print activity
 
 
 @harmony_command
-def list_devices(client):
+def list_devices(client, args):
     for device in client.get_devices():
-        print device['id'], device['label']
+        print device
 
 
 @harmony_command
-def sync(client):
-    """
-    Connects to the Harmony and syncs it.
-    """
+def list_commands(client, args):
+    device_id = int(args.device)
+    device = client.get_device(device_id)
+    for command in device.get_commands():
+        print command
+
+
+@harmony_command
+def sync(client, args):
     client.sync()
 
 
 @harmony_command
-def turn_off(client):
+def turn_off(client, args):
     client.turn_off()
 
 
 @harmony_command
-def start_activity(client):
+def start_activity(client, args):
     """
-    Connects to the Harmony and switches to a different activity, specified as an id
+    Switches to a different activity, identified by id
     """
-    config = client.get_config()
 
     activity_id = int(args.activity)
-
-    target_activity = None
-    for activity in config['activity']:
-        if int(activity['id']) == activity_id:
-            target_activity = activity
-            break
+    target_activity = client.get_activity(activity_id)
 
     if target_activity is None:
-        logger.error('could not find activity: ' + args.activity)
-        client.disconnect(send_close=True)
+        logger.error('Could not find activity: ' + args.activity)
         return 1
 
-    client.start_activity(int(target_activity['id']))
+    client.start_activity(activity_id)
 
-    logger.info("started activity: '%s' of id: '%s'" % (activity['label'], activity['id']))
+    print "started activity: {0} with id {1}".format(
+        target_activity['label'], target_activity['id']
+    )
 
 
-def send_command(args):
-    """Connects to the Harmony and send a simple command."""
-    client = get_client(args)
+@harmony_command
+def send_command(client, args):
+    """Send a simple command to specified device"""
 
-    config = client.get_config()
+    device_id = int(args.device)
+    target_device = client.get_device(device_id)
 
-    device = args.device if args.device_id is None else args.device_id
-
-    device_id = None
-    try:
-        device_id = int(float(device))
-    except ValueError:
-        pass
-    result_device_id = None
-    for dev in config['device']:
-        if device.lower() == dev['label'].lower() or (device_id is not None and device_id == int(dev['id'])):
-            result_device_id = int(dev['id'])
-            break
-
-    if not result_device_id:
-        logger.error('could not find device: ' + device)
-        client.disconnect(send_close=True)
+    if target_device is None:
+        logger.error('Could not find device: ' + device)
         return 1
 
-    client.send_command(result_device_id, args.command)
-
-    client.disconnect(send_close=True)
-    return 0
+    client.send_command(device_id, args.command)
 
 
 def main():
-    """Main method for the script."""
     parser = argparse.ArgumentParser(
         description='pyharmony utility script',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -194,6 +164,14 @@ def main():
         'list_devices', help='Print devices list with ids and labels.'
     )
     list_devices_parser.set_defaults(func=list_devices)
+
+    list_commands_parser = subparsers.add_parser(
+        'list_commands', help='Print commands for specified device.'
+    )
+    list_commands_parser.add_argument(
+        'device', help='Device ID.'
+    )
+    list_commands_parser.set_defaults(func=list_commands)
 
     start_activity_parser = subparsers.add_parser(
         'start_activity', help='Switch to a different activity.'
