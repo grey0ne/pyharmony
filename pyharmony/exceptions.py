@@ -1,0 +1,3 @@
+
+class HarmonyException(Exception):
+    pass

@@ -1,3 +1,2 @@
 argparse
-requests==1.1.0
-sleekxmpp
+slixmpp=1.2.3

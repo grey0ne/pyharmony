@@ -4,31 +4,38 @@ import argparse
 import logging
 import json
 import sys
+import asyncio
 
 from pyharmony.client import HarmonyClient, HarmonyException
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
-logging.getLogger('sleekxmpp').setLevel(logging.CRITICAL)
+logging.getLogger('slixmpp').setLevel(logging.CRITICAL)
 logging.getLogger('pyharmony').setLevel(logging.CRITICAL)
 
 
 def harmony_command(func):
     def decorated(args):
         try:
-            client = get_client(args)
+            client = HarmonyClient(args.hostname, args.port)
         except HarmonyException:
-            print 'Error in client initialization'
+            print('Error in client initialization')
             return 1
 
-        try:
-            return func(client, args)
-        except HarmonyException:
-            print 'Error in command execution'
-            return 1
-        finally:
-            client.disconnect(send_close=True)
+        result = asyncio.Future()
+
+        async def start(event):
+            try:
+                result.set_result(await func(client, args))
+            except HarmonyException:
+                print('Error in command execution')
+                return 1
+            client.disconnect()
+
+        client.add_event_handler('session_start', start)
+        client.process(forever=False)
+        return result.result()
 
     return decorated
 
@@ -38,86 +45,76 @@ def pprint(obj):
     print(json.dumps(obj, sort_keys=True, indent=4, separators=(',', ': ')))
 
 
-def get_client(args):
-    return HarmonyClient(args.hostname, args.port)
+@harmony_command
+async def show_config(client, args):
+    pprint(await client.get_config())
 
 
 @harmony_command
-def show_config(client, args):
-    pprint(client.get_config())
+async def show_current_activity(client, args):
+    current_activity_id = await client.get_current_activity()
+
+    current_activity = await client.get_activity(current_activity_id)
+
+    print('Current activity: {0}'.format(current_activity))
 
 
 @harmony_command
-def show_current_activity(client, args):
-    current_activity_id = int(client.get_current_activity())
-
-    current_activity = client.get_activity(current_activity_id)
-
-    print 'Current activity: ', current_activity['id'], current_activity['label']
+async def list_activities(client, args):
+    for activity in await client.get_activities():
+        print(activity)
 
 
 @harmony_command
-def list_activities(client, args):
-    for activity in client.get_activities():
-        print activity
+async def list_devices(client, args):
+    for device in await client.get_devices():
+        print(device)
 
 
 @harmony_command
-def list_devices(client, args):
-    for device in client.get_devices():
-        print device
-
-
-@harmony_command
-def list_commands(client, args):
+async def list_commands(client, args):
     device_id = int(args.device)
-    device = client.get_device(device_id)
+    device = await client.get_device(device_id)
     for command in device.get_commands():
-        print command
+        print(command)
 
 
 @harmony_command
-def sync(client, args):
-    client.sync()
+async def sync(client, args):
+    await client.sync()
 
 
 @harmony_command
-def turn_off(client, args):
-    client.turn_off()
+async def turn_off(client, args):
+    await client.turn_off()
 
 
 @harmony_command
-def start_activity(client, args):
-    """
-    Switches to a different activity, identified by id
-    """
-
+async def start_activity(client, args):
     activity_id = int(args.activity)
-    target_activity = client.get_activity(activity_id)
+    target_activity = await client.get_activity(activity_id)
 
     if target_activity is None:
         logger.error('Could not find activity: ' + args.activity)
         return 1
 
-    client.start_activity(activity_id)
+    await client.start_activity(activity_id)
 
-    print "started activity: {0} with id {1}".format(
-        target_activity['label'], target_activity['id']
-    )
+    print("started activity: {0}".format(target_activity))
 
 
 @harmony_command
-def send_command(client, args):
+async def send_command(client, args):
     """Send a simple command to specified device"""
 
     device_id = int(args.device)
-    target_device = client.get_device(device_id)
+    target_device = await client.get_device(device_id)
 
     if target_device is None:
-        logger.error('Could not find device: ' + device)
+        logger.error('Could not find device: ' + args.device)
         return 1
 
-    client.send_command(device_id, args.command)
+    await client.send_command(device_id, args.command)
 
 
 def main():
