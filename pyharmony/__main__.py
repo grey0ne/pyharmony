@@ -7,9 +7,14 @@ import logging
 import json
 import sys
 
-from harmony.client import HarmonyClient
+from pyharmony.client import HarmonyClient
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.ERROR)
+
+logging.getLogger('sleekxmpp').setLevel(logging.CRITICAL)
+logging.getLogger('urllib3').setLevel(logging.CRITICAL)
+logging.getLogger('pyharmony').setLevel(logging.CRITICAL)
 
 
 def pprint(obj):
@@ -88,7 +93,7 @@ def start_activity(args):
     config = client.get_config()
 
     activity_id = int(args.activity)
-    
+
     target_activity = None
     for activity in config['activity']:
         if int(activity['id']) == activity_id:
@@ -96,13 +101,13 @@ def start_activity(args):
             break
 
     if target_activity is None:
-        LOGGER.error('could not find activity: ' + args.activity)
+        logger.error('could not find activity: ' + args.activity)
         client.disconnect(send_close=True)
         return 1
 
     client.start_activity(int(target_activity['id']))
 
-    LOGGER.info("started activity: '%s' of id: '%s'" % (activity['label'], activity['id']))
+    logger.info("started activity: '%s' of id: '%s'" % (activity['label'], activity['id']))
 
     client.disconnect(send_close=True)
     return 0
@@ -128,7 +133,7 @@ def send_command(args):
             break
 
     if not result_device_id:
-        LOGGER.error('could not find device: ' + device)
+        logger.error('could not find device: ' + device)
         client.disconnect(send_close=True)
         return 1
 
@@ -150,8 +155,8 @@ def main():
     )
 
     parser.add_argument(
-        '--port', default=5222, type=int, help=(
-        'Network port that the Harmony is listening on.')
+        '--port', default=5222, type=int,
+        help=('Network port that the Harmony is listening on.')
     )
 
     loglevels = dict(

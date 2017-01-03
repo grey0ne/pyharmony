@@ -51,7 +51,6 @@ class AuthTokenClient(sleekxmpp.ClientXMPP):
         match = re.search(r'identity=(?P<uuid>[\w-]+):status', oa_resp.text)
         assert match
         self.uuid = match.group('uuid')
-        logger.info('Received UUID from device: %s', self.uuid)
         self.disconnect(send_close=False)
 
 

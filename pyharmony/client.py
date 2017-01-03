@@ -6,7 +6,7 @@ import time
 
 from sleekxmpp.xmlstream import ET
 from sleekxmpp import ClientXMPP
-from harmony import auth as harmony_auth
+from pyharmony.auth import get_auth_token
 
 
 LOGGER = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class HarmonyClient(ClientXMPP):
     """An XMPP client for connecting to the Logitech Harmony."""
 
     def __init__(self, hostname, port='5222'):
-        session_token = harmony_auth.get_auth_token(hostname, port)
+        session_token = get_auth_token(hostname, port)
 
         # Enables PLAIN authentication which is off by default.
         plugin_config = {'feature_mechanisms': {'unencrypted_plain': True}}
