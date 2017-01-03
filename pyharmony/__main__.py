@@ -7,13 +7,34 @@ import logging
 import json
 import sys
 
-from pyharmony.client import HarmonyClient
+from pyharmony.client import HarmonyClient, HarmonyException
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
 logging.getLogger('sleekxmpp').setLevel(logging.CRITICAL)
 logging.getLogger('pyharmony').setLevel(logging.CRITICAL)
+
+
+def harmony_command(func):
+    def decorated(args):
+        try:
+            client = get_client(args)
+        except HarmonyException:
+            print 'Error in client initialization'
+            return 1
+
+        try:
+            func(client)
+        except HarmonyException:
+            print 'Error in command execution'
+            return 1
+        finally:
+            client.disconnect(send_close=True)
+
+        return 0
+
+    return decorated
 
 
 def pprint(obj):
@@ -26,19 +47,17 @@ def get_client(args):
     return HarmonyClient(args.hostname, args.port)
 
 
-def show_config(args):
+@harmony_command
+def show_config(client):
     """Connects to the Harmony and prints its configuration."""
-    client = get_client(args)
     pprint(client.get_config())
-    client.disconnect(send_close=True)
-    return 0
 
 
-def show_current_activity(args):
+@harmony_command
+def show_current_activity(client):
     """
     Connects to the Harmony and prints the current activity block from the config.
     """
-    client = get_client(args)
     config = client.get_config()
     current_activity_id = client.get_current_activity()
 
@@ -49,55 +68,37 @@ def show_current_activity(args):
 
     print 'CURRENT: ', current_activity['id'], current_activity['label']
 
-    client.disconnect(send_close=True)
-    return 0
 
-
-def list_activities(args):
-    client = get_client(args)
-
+@harmony_command
+def list_activities(client):
     for activity in client.get_activities():
         print activity['id'], activity['label']
 
-    client.disconnect(send_close=True)
-    return 0
 
-
-def list_devices(args):
-    client = get_client(args)
-    
+@harmony_command
+def list_devices(client):
     for device in client.get_devices():
         print device['id'], device['label']
 
-    client.disconnect(send_close=True)
-    return 0
 
-
-def sync(args):
+@harmony_command
+def sync(client):
     """
     Connects to the Harmony and syncs it.
     """
-    client = get_client(args)
-
     client.sync()
 
-    client.disconnect(send_close=True)
-    return 0
 
-
-def turn_off(args):
-    client = get_client(args)
+@harmony_command
+def turn_off(client):
     client.turn_off()
-    client.disconnect(send_close=True)
-    return 0
 
 
-def start_activity(args):
+@harmony_command
+def start_activity(client):
     """
     Connects to the Harmony and switches to a different activity, specified as an id
     """
-    client = get_client(args)
-
     config = client.get_config()
 
     activity_id = int(args.activity)
@@ -116,9 +117,6 @@ def start_activity(args):
     client.start_activity(int(target_activity['id']))
 
     logger.info("started activity: '%s' of id: '%s'" % (activity['label'], activity['id']))
-
-    client.disconnect(send_close=True)
-    return 0
 
 
 def send_command(args):
@@ -183,7 +181,7 @@ def main():
     show_config_parser.set_defaults(func=show_config)
 
     show_activity_parser = subparsers.add_parser(
-        'show_current_activity', help='Print the current activity config.'
+        'current_activity', help='Print current activity label and id.'
     )
     show_activity_parser.set_defaults(func=show_current_activity)
 
