@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2013, Jeff Terrace
@@ -15,7 +14,7 @@ from sleekxmpp.xmlstream import ET
 logger = logging.getLogger(__name__)
 
 
-class AuthToken(sleekxmpp.ClientXMPP):
+class AuthTokenClient(sleekxmpp.ClientXMPP):
     """An XMPP client for swapping a Login Token for a Session Token.
 
     After the client finishes processing, the uuid attribute of the class will
@@ -23,13 +22,13 @@ class AuthToken(sleekxmpp.ClientXMPP):
     """
 
     def __init__(self):
-        """Initializes the client."""
         plugin_config = {
             # Enables PLAIN authentication which is off by default.
             'feature_mechanisms': {'unencrypted_plain': True},
         }
-        super(AuthToken, self).__init__(
-            'guest@connect.logitech.com/gatorade.', 'gatorade.', plugin_config=plugin_config)
+        super(AuthTokenClient, self).__init__(
+            'guest@connect.logitech.com/gatorade.', 'gatorade.', plugin_config=plugin_config
+        )
 
         self.token = None
         self.uuid = None
@@ -42,8 +41,7 @@ class AuthToken(sleekxmpp.ClientXMPP):
         action_cmd = ET.Element('oa')
         action_cmd.attrib['xmlns'] = 'connect.logitech.com'
         action_cmd.attrib['mime'] = 'vnd.logitech.connect/vnd.logitech.pair'
-        action_cmd.text = 'token=%s:name=%s' % (self.token,
-                                                'foo#iOS6.0.1#iPhone')
+        action_cmd.text = 'token={0}:name={1}'.format(self.token, 'foo#iOS9.1.1#iPhone')
         iq_cmd.set_payload(action_cmd)
         result = iq_cmd.send(block=True)
         payload = result.get_payload()
@@ -58,8 +56,7 @@ class AuthToken(sleekxmpp.ClientXMPP):
 
 
 def get_auth_token(ip_address, port):
-    """Swaps the Logitech auth token for a session token.
-
+    """
     Args:
         ip_address (str): IP Address of the Harmony device IP address
         port (str): Harmony device port
@@ -67,7 +64,7 @@ def get_auth_token(ip_address, port):
     Returns:
         A string containing the session token.
     """
-    login_client = AuthToken()
-    login_client.connect(address=(ip_address, port),use_tls=False, use_ssl=False)
+    login_client = AuthTokenClient()
+    login_client.connect(address=(ip_address, port), use_tls=False, use_ssl=False)
     login_client.process(block=True)
     return login_client.uuid
