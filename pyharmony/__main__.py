@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
 logging.getLogger('sleekxmpp').setLevel(logging.CRITICAL)
-logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 logging.getLogger('pyharmony').setLevel(logging.CRITICAL)
 
 
@@ -56,10 +55,19 @@ def show_current_activity(args):
 
 def list_activities(args):
     client = get_client(args)
-    config = client.get_config()
 
-    for activity in config['activity']:
+    for activity in client.get_activities():
         print activity['id'], activity['label']
+
+    client.disconnect(send_close=True)
+    return 0
+
+
+def list_devices(args):
+    client = get_client(args)
+    
+    for device in client.get_devices():
+        print device['id'], device['label']
 
     client.disconnect(send_close=True)
     return 0
@@ -183,6 +191,11 @@ def main():
         'list_activities', help='Print activities list with ids and labels.'
     )
     list_activities_parser.set_defaults(func=list_activities)
+
+    list_devices_parser = subparsers.add_parser(
+        'list_devices', help='Print devices list with ids and labels.'
+    )
+    list_devices_parser.set_defaults(func=list_devices)
 
     start_activity_parser = subparsers.add_parser(
         'start_activity', help='Switch to a different activity.'

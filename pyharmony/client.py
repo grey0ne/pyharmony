@@ -1,5 +1,3 @@
-"""Client class for connecting to the Logitech Harmony."""
-
 import json
 import logging
 import time
@@ -9,7 +7,7 @@ from sleekxmpp import ClientXMPP
 from pyharmony.auth import get_auth_token
 
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 MIME_PREFIX = 'vnd.logitech.harmony/vnd.logitech.harmony.engine'
 XMLNS = 'connect.logitech.com'
@@ -18,6 +16,10 @@ OFF_ACTIVITY_ID = -1
 
 def get_mime(command):
     return '{0}?{1}'.format(MIME_PREFIX, command)
+
+
+class HarmonyException(Exception):
+    pass
 
 
 class HarmonyClient(ClientXMPP):
@@ -37,8 +39,22 @@ class HarmonyClient(ClientXMPP):
         self.connect(address=(hostname, port), use_tls=False, use_ssl=False)
         self.process(block=False)
 
+        self.config_loaded = False
+        self.devices = {}
+        self.activities = {}
+
         while not self.sessionstarted:
             time.sleep(0.1)
+
+    def get_activities(self):
+        if not self.config_loaded:
+            self.get_config()
+        return self.activities.values()
+    
+    def get_devices(self):
+        if not self.config_loaded:
+            self.get_config()
+        return self.devices.values()
 
     def send_request(self, mime, command=None):
         iq_cmd = self.Iq()
@@ -49,12 +65,24 @@ class HarmonyClient(ClientXMPP):
         if command is not None:
             action_cmd.text = command
         iq_cmd.set_payload(action_cmd)
-        result = iq_cmd.send(block=True)
+        try:
+            result = iq_cmd.send(block=True)
+        except:
+            raise HarmonyException('Error sending command to hub')
+
         payload = result.get_payload()
 
-        assert len(payload) == 1
+        if len(payload) != 1:
+            raise HarmonyException('Bad payload from hub')
+
         action_cmd = payload[0]
-        assert action_cmd.attrib['errorcode'] == '200'
+
+        result_code = action_cmd.attrib['errorcode']
+
+        if result_code != '200':
+            raise HarmonyException(
+                'Bad response code from hub: {0}'.format(result_code)
+            )
 
         return action_cmd.text
 
@@ -65,17 +93,24 @@ class HarmonyClient(ClientXMPP):
         """
         mime = get_mime('config')
         result_text = self.send_request(mime)
-        return json.loads(result_text)
+
+        config = json.loads(result_text)
+
+        for device in config['device']:
+            self.devices[device['id']] = device
+
+        for activity in config['activity']:
+            self.activities[activity['id']] = activity
+
+        self.config_loaded = True
+
+        return config
 
     def get_current_activity(self):
-        """
-        Returns:
-          A int with the activity ID.
-        """
         mime = get_mime('getCurrentActivity')
         result_text = self.send_request(mime)
-        activity = result_text.split("=")
-        return int(activity[1])
+        current_activity_id = result_text.split("=")[1]
+        return current_activity_id
 
     def _timestamp(self):
         return str(int(round(time.time() * 1000)))
@@ -112,7 +147,5 @@ class HarmonyClient(ClientXMPP):
 
     def turn_off(self):
         activity = self.get_current_activity()
-        print(activity)
         if activity != OFF_ACTIVITY_ID:
-            print("OFF")
             self.start_activity(OFF_ACTIVITY_ID)
