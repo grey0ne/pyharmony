@@ -20,29 +20,36 @@ Usage
 
 To query your device's configuration state:
 
-    PYTHONPATH="." python harmony --hostname <harmony_host> show_config
+    harmony --hostname <harmony_host> show_config
 
 It really helps to assign a static lease and hostname for your harmony
 on your router interface, so you don't have to keep looking up the IP.
 
 Some other commands you can invoke via command line:
 
-    PYTHONPATH="." python harmony --hostname <harmony_host> start_activity 'watch movie'
+    harmony --hostname <harmony_host> list_activities
 
-    PYTHONPATH="." python harmony --hostname <harmony_host> sync
 
-    PYTHONPATH="." python harmony --hostname <harmony_host> show_current_activity
+    harmony --hostname <harmony_host> start_activity <activity_id>
 
-    PYTHONPATH="." python harmony --hostname <harmony_host> turn_off
+    harmony --hostname <harmony_host> sync
+
+    harmony --hostname <harmony_host> show_current_activity
+
+    harmony --hostname <harmony_host> turn_off
 
     # to send device commands, look in show_config for the device and
     # command name, you can use either the device id or label with --device
 
-    PYTHONPATH="." python harmony --hostname <harmony_host> send_command --device 'yamaha soundbar' --command PowerToggle
+    harmony --hostname <harmony_host> list_devices
+
+    harmony --hostname <harmony_host> show_commands <device_id>
+
+    harmony --hostname <harmony_host> send_command --device <device_id> --command PowerToggle
 
 For full argument information on the command-line tool:
 
-    PYTHONPATH="." python harmony --help
+    harmony --help
 
 TODO
 ----
