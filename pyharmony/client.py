@@ -51,9 +51,11 @@ class HarmonyClient(ClientXMPP):
         iq_cmd.set_payload(action_cmd)
         result = iq_cmd.send(block=True)
         payload = result.get_payload()
+
         assert len(payload) == 1
         action_cmd = payload[0]
         assert action_cmd.attrib['errorcode'] == '200'
+
         return action_cmd.text
 
     def get_config(self):
@@ -79,28 +81,14 @@ class HarmonyClient(ClientXMPP):
         return str(int(round(time.time() * 1000)))
 
     def start_activity(self, activity_id):
-        iq_cmd = self.Iq()
-        iq_cmd['type'] = 'get'
-        action_cmd = ET.Element('oa')
-        action_cmd.attrib['xmlns'] = 'connect.logitech.com'
-        action_cmd.attrib['mime'] = ('harmony.activityengine?runactivity')
-        cmd = 'activityId=' + str(activity_id) + ':timestamp=' + self._timestamp() + ':async=1'
-        action_cmd.text = cmd
-        iq_cmd.set_payload(action_cmd)
-        iq_cmd.send(block=True)
+        mime = 'harmony.activityengine?runactivity'
+        command = 'activityId=' + str(activity_id) + ':timestamp=' + self._timestamp() + ':async=1'
+        self.send_request(mime, command)
 
     def sync(self):
         """Syncs the harmony hub with the web service."""
-
-        iq_cmd = self.Iq()
-        iq_cmd['type'] = 'get'
-        action_cmd = ET.Element('oa')
-        action_cmd.attrib['xmlns'] = 'connect.logitech.com'
-        action_cmd.attrib['mime'] = ('setup.sync')
-        iq_cmd.set_payload(action_cmd)
-        result = iq_cmd.send(block=True)
-        payload = result.get_payload()
-        assert len(payload) == 1
+        mime = 'setup.sync'
+        self.send_request(mime)
 
     def send_command(self, device_id, command):
         """Send a simple command to the Harmony Hub."""
