@@ -1,2 +1,2 @@
 argparse
-slixmpp=1.2.3
+slixmpp==1.2.3
