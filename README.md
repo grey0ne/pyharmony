@@ -29,7 +29,6 @@ Some other commands you can invoke via command line:
 
     harmony --hostname <harmony_host> list_activities
 
-
     harmony --hostname <harmony_host> start_activity <activity_id>
 
     harmony --hostname <harmony_host> sync
@@ -38,8 +37,8 @@ Some other commands you can invoke via command line:
 
     harmony --hostname <harmony_host> turn_off
 
-    # to send device commands, look in show_config for the device and
-    # command name, you can use either the device id or label with --device
+    # To send device commands, look in list_devices and show_commands
+    # for the device_id and command name.
 
     harmony --hostname <harmony_host> list_devices
 
