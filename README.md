@@ -37,8 +37,8 @@ Some other commands you can invoke via command line:
 
     harmony --hostname <harmony_host> turn_off
 
-    # To send device commands, look in list_devices and show_commands
-    # for the device_id and command name.
+To send device commands, look in list_devices and show_commands
+for the device_id and command name.
 
     harmony --hostname <harmony_host> list_devices
 
