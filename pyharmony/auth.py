@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 class AuthTokenClient(ClientXMPP):
     """
-
     After the client finishes processing, the uuid attribute of the class will
     contain the session token.
     """
@@ -63,9 +62,8 @@ class AuthTokenClient(ClientXMPP):
         return match.group('uuid')
 
 
-def get_auth_token(hostname, port):
+async def get_auth_token(hostname, port='5222'):
     login_client = AuthTokenClient()
-
     token = asyncio.Future()
 
     async def session_start(event):
@@ -74,5 +72,5 @@ def get_auth_token(hostname, port):
 
     login_client.add_event_handler('session_start', session_start)
     login_client.connect(address=(hostname, port), disable_starttls=True, use_ssl=False)
-    login_client.process(forever=False)
+    await token
     return token.result()

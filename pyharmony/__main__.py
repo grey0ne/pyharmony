@@ -7,6 +7,7 @@ import sys
 import asyncio
 
 from pyharmony.client import HarmonyClient, HarmonyException
+from pyharmony.auth import get_auth_token
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
@@ -17,24 +18,29 @@ logging.getLogger('pyharmony').setLevel(logging.CRITICAL)
 
 def harmony_command(func):
     def decorated(args):
-        try:
-            client = HarmonyClient(args.hostname, args.port)
-        except HarmonyException:
-            print('Error in client initialization')
-            return 1
-
         result = asyncio.Future()
 
-        async def start(event):
+        async def run_command():
+            session_token = await get_auth_token(args.hostname)
+
+            try:
+                client = HarmonyClient(session_token)
+            except HarmonyException:
+                print('Error in client initialization')
+                return 1
+
+            await client.connect(args.hostname)
+
             try:
                 result.set_result(await func(client, args))
             except HarmonyException:
                 print('Error in command execution')
                 return 1
+
             client.disconnect()
 
-        client.add_event_handler('session_start', start)
-        client.process(forever=False)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(run_command())
         return result.result()
 
     return decorated

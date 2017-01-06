@@ -1,16 +1,22 @@
 from pyharmony.client import HarmonyClient
+from pyharmony.auth import get_auth_token
 from datetime import datetime
+import asyncio
 
 HOSTNAME = '192.168.1.118'
-PORT = 5222
 
 SOUND_DEVICE_ID = 35465110
 
-print('START {0}'.format(datetime.now()))
-client = HarmonyClient(HOSTNAME, PORT)
 
-async def start(event):
+async def harmony_example():
+    print('START {0}'.format(datetime.now()))
+
+    session_token = await get_auth_token(HOSTNAME)
+    client = HarmonyClient(session_token)
+    await client.connect(HOSTNAME)
+
     print('CLIENT INITIALIZED {0}'.format(datetime.now()))
+
     await client.get_device(SOUND_DEVICE_ID)
 
     print('DEVICE AQUIRED {0}'.format(datetime.now()))
@@ -19,13 +25,14 @@ async def start(event):
 
     print('COMMAND SENT {0}'.format(datetime.now()))
 
-    await client.send_command(SOUND_DEVICE_ID, 'VolumeUp')
+    await asyncio.sleep(0.5)  # Some devices may not recognize commands sent too quickly
+    await client.send_command(SOUND_DEVICE_ID, 'VolumeDown')
 
     print('COMMAND SENT {0}'.format(datetime.now()))
 
-    await client.disconnect()
+    client.disconnect()
 
     print('CONNECTION CLOSED {0}'.format(datetime.now()))
 
-client.add_event_handler('session_start', start)
-client.process(forever=False)
+loop = asyncio.get_event_loop()
+loop.run_until_complete(harmony_example())

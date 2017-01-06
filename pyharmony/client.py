@@ -1,11 +1,11 @@
 import json
 import logging
 import time
+import asyncio
 
 from slixmpp.xmlstream import ET
 from slixmpp.exceptions import IqError, IqTimeout
 from slixmpp import ClientXMPP
-from pyharmony.auth import get_auth_token
 from pyharmony.exceptions import HarmonyException
 
 
@@ -55,8 +55,7 @@ class Command(object):
 class HarmonyClient(ClientXMPP):
     """An XMPP client for connecting to the Logitech Harmony."""
 
-    def __init__(self, hostname, port='5222'):
-        session_token = get_auth_token(hostname, port)
+    def __init__(self, session_token):
 
         # Enables PLAIN authentication which is off by default.
         plugin_config = {'feature_mechanisms': {'unencrypted_plain': True}}
@@ -66,11 +65,20 @@ class HarmonyClient(ClientXMPP):
             jid, session_token, plugin_config=plugin_config
         )
 
-        self.connect(address=(hostname, port), disable_starttls=True, use_ssl=False)
-
         self.raw_config = None
         self.devices = {}
         self.activities = {}
+
+    async def connect(self, hostname, port='5222'):
+        connected = asyncio.Future()
+
+        async def session_start(event):
+            connected.set_result(True)
+        self.add_event_handler('session_start', session_start)
+        super(HarmonyClient, self).connect(
+            address=(hostname, port), disable_starttls=True, use_ssl=False
+        )
+        await connected
 
     async def get_activities(self):
         await self.get_config()
