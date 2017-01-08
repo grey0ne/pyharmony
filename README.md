@@ -42,7 +42,7 @@ for the device_id and command name.
 
     harmony --hostname <harmony_host> list_devices
 
-    harmony --hostname <harmony_host> show_commands <device_id>
+    harmony --hostname <harmony_host> list_commands <device_id>
 
     harmony --hostname <harmony_host> send_command --device <device_id> --command PowerToggle
 
