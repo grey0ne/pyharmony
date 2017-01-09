@@ -27,7 +27,7 @@ async def harmony_example():
 
     print('COMMAND SENT {0}'.format(datetime.now()))
 
-    client.disconnect()
+    await client.disconnect()
 
     print('CONNECTION CLOSED {0}'.format(datetime.now()))
 

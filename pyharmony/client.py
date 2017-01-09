@@ -75,11 +75,22 @@ class HarmonyClient(ClientXMPP):
 
         async def session_start(event):
             connected.set_result(True)
+
         self.add_event_handler('session_start', session_start)
         super(HarmonyClient, self).connect(
             address=(hostname, port), disable_starttls=True, use_ssl=False
         )
         await connected
+
+    async def disconnect(self):
+        disconnected = asyncio.Future()
+
+        async def on_disconnect(event):
+            disconnected.set_result(True)
+
+        self.add_event_handler('disconnected', on_disconnect)
+        super(HarmonyClient, self).disconnect()
+        await disconnected
 
     async def get_activities(self):
         await self.get_config()
