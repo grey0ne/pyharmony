@@ -20,7 +20,7 @@ requirements = [x.strip() for x in open(here('requirements.txt')).readlines()]
 
 setup(
     name='pyharmony',
-    version='1.2.2',
+    version='1.2.3',
     description='Python library for programmatically using a Logitech Harmony Link or Ultimate Hub.',
     long_description=readme,
     author='Sergey Lihobabin',
