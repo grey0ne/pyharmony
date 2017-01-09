@@ -6,8 +6,7 @@ import json
 import sys
 import asyncio
 
-from pyharmony.client import HarmonyClient, HarmonyException
-from pyharmony.auth import get_auth_token
+from pyharmony.client import HarmonyException, init_harmony
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
@@ -21,20 +20,16 @@ def harmony_command(func):
         result = asyncio.Future()
 
         async def run_command():
-            session_token = await get_auth_token(args.hostname)
-
             try:
-                client = HarmonyClient(session_token)
+                client = await init_harmony(args.hostname)
             except HarmonyException:
-                print('Error in client initialization')
+                print('Error during client initialization')
                 return 1
-
-            await client.connect(args.hostname)
 
             try:
                 result.set_result(await func(client, args))
             except HarmonyException:
-                print('Error in command execution')
+                print('Error during command execution')
                 return 1
 
             client.disconnect()

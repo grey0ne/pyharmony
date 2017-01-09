@@ -1,5 +1,4 @@
-from pyharmony.client import HarmonyClient
-from pyharmony.auth import get_auth_token
+from pyharmony.client import init_harmony
 from datetime import datetime
 import asyncio
 
@@ -11,9 +10,7 @@ SOUND_DEVICE_ID = 35465110
 async def harmony_example():
     print('START {0}'.format(datetime.now()))
 
-    session_token = await get_auth_token(HOSTNAME)
-    client = HarmonyClient(session_token)
-    await client.connect(HOSTNAME)
+    client = await init_harmony(HOSTNAME)
 
     print('CLIENT INITIALIZED {0}'.format(datetime.now()))
 

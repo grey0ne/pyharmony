@@ -7,6 +7,7 @@ from slixmpp.xmlstream import ET
 from slixmpp.exceptions import IqError, IqTimeout
 from slixmpp import ClientXMPP
 from pyharmony.exceptions import HarmonyException
+from pyharmony.auth import get_auth_token
 
 
 logger = logging.getLogger(__name__)
@@ -212,3 +213,10 @@ class HarmonyClient(ClientXMPP):
         activity = await self.get_current_activity()
         if activity != OFF_ACTIVITY_ID:
             await self.start_activity(OFF_ACTIVITY_ID)
+
+
+async def init_harmony(hostname):
+    session_token = await get_auth_token(hostname)
+    client = HarmonyClient(session_token)
+    await client.connect(hostname)
+    return client
