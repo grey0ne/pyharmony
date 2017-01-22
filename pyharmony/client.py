@@ -5,6 +5,7 @@ import asyncio
 
 from slixmpp.xmlstream import ET
 from slixmpp.exceptions import IqError, IqTimeout
+from slixmpp.xmlstream.xmlstream import NotConnectedError
 from slixmpp import ClientXMPP
 from pyharmony.exceptions import HarmonyException
 from pyharmony.auth import get_auth_token
@@ -70,15 +71,19 @@ class HarmonyClient(ClientXMPP):
         self.devices = {}
         self.activities = {}
 
-    async def connect(self, hostname, port='5222'):
+    async def connect(self, hostname=None, port='5222'):
         connected = asyncio.Future()
+        if hostname is None and self.hostname is None:
+            raise HarmonyException('No hostname provided')
+        self.hostname = hostname
+        self.port = port
 
         async def session_start(event):
             connected.set_result(True)
 
         self.add_event_handler('session_start', session_start)
         super(HarmonyClient, self).connect(
-            address=(hostname, port), disable_starttls=True, use_ssl=False
+            address=(self.hostname, self.port), disable_starttls=True, use_ssl=False
         )
         await connected
 
@@ -108,7 +113,7 @@ class HarmonyClient(ClientXMPP):
         await self.get_config()
         return self.devices.get(device_id)
 
-    async def send_request(self, mime, command=None, block=True):
+    async def _send(self, mime, command=None, block=True):
         iq_cmd = self.Iq()
         iq_cmd['type'] = 'get'
         action_cmd = ET.Element('oa')
@@ -119,11 +124,21 @@ class HarmonyClient(ClientXMPP):
         iq_cmd.set_payload(action_cmd)
         try:
             if block:
-                result = await iq_cmd.send()
+                return await iq_cmd.send()
             else:
                 iq_cmd.send()
         except (IqError, IqTimeout):
             raise HarmonyException('Error sending command to hub')
+
+    async def send_request(self, mime, command=None, block=True, retry=True):
+        try:
+            result = await self._send(mime, command, block)
+        except NotConnectedError:
+            if retry:
+                await self.connect()  # retry command after reconnection
+                result = await self._send(mime, command, block)
+            else:
+                raise
 
         if block:
             payload = result.get_payload()
