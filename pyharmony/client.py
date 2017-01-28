@@ -75,8 +75,10 @@ class HarmonyClient(ClientXMPP):
         connected = asyncio.Future()
         if hostname is None and self.hostname is None:
             raise HarmonyException('No hostname provided')
-        self.hostname = hostname
-        self.port = port
+        if hostname:
+            self.hostname = hostname
+        if port:
+            self.port = port
 
         async def session_start(event):
             connected.set_result(True)
